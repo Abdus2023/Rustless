@@ -1,0 +1,14 @@
+name: Rustless
+on: [push, pull_request]
+jobs:
+  self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -m tools.rustless self-test
+      - run: python -m tools.rustless inventory
+      - run: python -m tools.rustless toolchain
+      - run: python -m tools.rustless fixtures
+      - run: python -m tools.rustless verify
