@@ -25,7 +25,8 @@ def graph(root, cfg, jobs=8, include=(), exclude=()):
     claims = parts['claims']['result'] if parts['claims']['ok'] else []
     static = parts['static']['result'] if parts['static']['ok'] else {'status':'BLOCKED','error':parts['static']['error']}
     ci = parts['ci']['result'] if parts['ci']['ok'] else {'status':'BLOCKED','error':parts['ci']['error']}
-    integrity = manifest(root, include, exclude + ('artifacts/rustless/verification.json', 'artifacts/rustless/verification.md'))
+    integrity_exclude = tuple(exclude) + ('artifacts/rustless/verification.json', 'artifacts/rustless/verification.md')
+    integrity = manifest(root, include, integrity_exclude)
     store = EvidenceStore()
     ev_inv = store.add('inventory', '.', Status.VERIFIED, 'filesystem inventory')
     ev_fix = store.add('fixture_inventory', 'fixtures', Status.VERIFIED, 'safe filesystem discovery', {'count': len(fix)})
