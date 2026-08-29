@@ -5,13 +5,14 @@ NATIVE = ("cargo_check", "cargo_test", "cargo_fmt", "cargo_clippy", "miri")
 
 def evaluate(toolchains, sections):
     rust = bool(toolchains.get("rust_files"))
-    gates = [
+    gate_objects = [
         Gate("RG-001", "Repository Inventory", True, Status.VERIFIED, reason="Repository inventory completed."),
         Gate("RG-002", "Fixture Integrity", True, Status.VERIFIED, reason="Fixture inspection completed without execution."),
         Gate("RG-003", "Provenance", True, Status.VERIFIED, reason="Provenance inspection completed."),
         Gate("RG-004", "Static Analysis", True, Status.VERIFIED, reason="Static structural inspection completed."),
         Gate("RG-005", "CI Reconciliation", False, Status.VERIFIED, class_name="advisory", reason="CI definitions inspected; workflows were not executed."),
     ]
+    gates = [gate.json() for gate in gate_objects]
     native_available = bool(toolchains.get("cargo", {}).get("available") and toolchains.get("rustc", {}).get("available"))
     for offset, name in enumerate(NATIVE, 6):
         if not rust:
