@@ -6,9 +6,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: {python-version: '3.11'}
-      - run: python -m tools.rustless self-test
-      - run: python -m tools.rustless inventory
-      - run: python -m tools.rustless toolchain
-      - run: python -m tools.rustless fixtures
-      - run: python -m tools.rustless verify
+        with:
+          python-version: '3.11'
+      - name: Self-test
+        run: python -m tools.rustless self-test
+      - name: CLI smoke tests
+        run: |
+          python -m tools.rustless inventory
+          python -m tools.rustless toolchain
+          python -m tools.rustless fixtures
+      - name: Full verification
+        run: python -m tools.rustless verify --json --output artifacts/rustless/verification.json
+      - name: Upload canonical reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rustless-verification
+          path: artifacts/rustless/
