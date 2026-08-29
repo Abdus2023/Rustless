@@ -32,12 +32,12 @@ def graph(root, cfg, jobs=8, include=(), exclude=()):
     ev_fix = store.add('fixture_inventory', 'fixtures', Status.VERIFIED, 'safe filesystem discovery', {'count': len(fix)})
     ev_int = store.add('sha256_manifest', '.', Status.VERIFIED, 'sha256', {'file_count': len(integrity['files'])})
     ev_prov = store.add('provenance', '.', Status(prov.get('status','PROVISIONAL')), 'provenance inspection')
+    ev_static = store.add('static', '.', Status(static.get('status','PROVISIONAL')), 'static structural inspection')
+    ev_ci = store.add('ci', '.', Status(ci.get('status','PROVISIONAL')), 'CI declaration inspection')
     gates, overall = evaluate(tc, {'inventory':inv,'fixtures':fix,'provenance':prov,'static':static,'ci':ci})
+    evidence_by_gate = {'RG-001':[ev_inv], 'RG-002':[ev_fix], 'RG-003':[ev_prov], 'RG-004':[ev_static], 'RG-005':[ev_ci]}
     for g in gates:
-        if g['id']=='RG-001': g['evidence']=[ev_inv]
-        elif g['id']=='RG-002': g['evidence']=[ev_fix]
-        elif g['id']=='RG-003': g['evidence']=[ev_prov]
-        elif g['id']=='RG-004': g['evidence']=[ev_int]
+        g['evidence'] = evidence_by_gate.get(g['id'], [])
     blockers = sorted(set(g['reason'] for g in gates if g['status']=='BLOCKED' and g['required']))
     return {'schema':'rustless-verification-v1','repository':identity(root),'environment':{'python':sys.version.split()[0]},'toolchains':tc,'inventory':inv,'fixtures':fix,'integrity':integrity,'provenance':prov,'claims':claims,'static':static,'ci':ci,'checks':parts,'evidence':store.json(),'gates':gates,'limitations':['Static inspection, fixture integrity, and claim reconciliation are not native execution evidence.','CI definitions are inspected but never executed by rustless.'],'blockers':blockers,'summary':{'status':overall,'required_gate_count':sum(g['required'] for g in gates),'blocked_required_gate_count':len(blockers)}}
 
