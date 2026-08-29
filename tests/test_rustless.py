@@ -51,7 +51,8 @@ class RustlessTests(unittest.TestCase):
     def test_empty_and_missing_rust(self):
         with tempfile.TemporaryDirectory() as d:
             r=Path(d); tc=detect(r); gates,status=evaluate(tc,{})
-            self.assertEqual(status,'VERIFIED'); self.assertIn('native_rust_execution',tc)
+            self.assertEqual(status,'VERIFIED'); native=[g for g in gates if g['name']=='cargo_test']
+            self.assertEqual(native[0]['status'],'NOT_APPLICABLE'); self.assertEqual(native[0]['applicability'],'NOT_APPLICABLE')
 
     def test_rust_native_gate_blocked_without_tools(self):
         with tempfile.TemporaryDirectory() as d:
