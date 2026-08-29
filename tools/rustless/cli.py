@@ -20,11 +20,10 @@ def graph(root,cfg):
     return {'schema':'rustless-verification-v1','repository':identity(root),'environment':{'python':sys.version.split()[0]},'toolchains':tc,'inventory':inv,'fixtures':fix,'integrity':{},'provenance':prov,'claims':cl,'static':st,'ci':ci,'gates':gates,'evidence':[],'limitations':['Python structural inspection is not native compiler/runtime evidence.'],'blockers':[g['reason'] for g in gates if g['status']=='BLOCKED'],'summary':{'status':overall}}
 
 def main(argv=None):
-    ap=argparse.ArgumentParser(prog='python -m tools.rustless'); ap.add_argument('command',nargs='?',default='verify'); ap.add_argument('subcommand',nargs='?'); ap.add_argument('--root'); ap.add_argument('--config'); ap.add_argument('--jobs',type=int,default=8); ap.add_argument('--output',default='artifacts/rustless/verification.json'); ap.add_argument('--json',action='store_true'); ap.add_argument('--markdown',action='store_true'); ap.add_argument('--strict',action='store_true'); args=ap.parse_args(argv)
+    ap=argparse.ArgumentParser(prog='python -m tools.rustless'); ap.add_argument('command',nargs='?',default='verify'); ap.add_argument('subcommand',nargs='?'); ap.add_argument('--root'); ap.add_argument('--config'); ap.add_argument('--jobs',type=int,default=8); ap.add_argument('--output',default='artifacts/rustless/verification.json'); ap.add_argument('--json',action='store_true'); ap.add_argument('--markdown',action='store_true'); ap.add_argument('--strict',action='store_true'); ap.add_argument('--verbose',action='store_true'); ap.add_argument('--quiet',action='store_true'); ap.add_argument('--fail-on',choices=[s.value for s in Status]); ap.add_argument('--include',action='append',default=[]); ap.add_argument('--exclude',action='append',default=[]); args=ap.parse_args(argv)
     root=Path(args.root).resolve() if args.root else discover_root(); cfg=load_config(root,args.config)
-    if args.command=='self-test':
-        p=subprocess.run([sys.executable,'-m','unittest','discover','-s','tests','-p','test_rustless.py'],cwd=root); return p.returncode
-    if args.command=='integrity' and args.subcommand=='create': create(root,Path(cfg['integrity']['manifest'])); print('INTEGRITY MANIFEST: CREATED'); return 0
+    if args.command=='self-test': return subprocess.run([sys.executable,'-m','unittest','discover','-s','tests','-p','test_rustless.py'],cwd=root).returncode
+    if args.command=='integrity' and args.subcommand=='create': create(root,Path(cfg['integrity']['manifest']),args.include,args.exclude); print('INTEGRITY MANIFEST: CREATED'); return 0
     if args.command=='integrity' and args.subcommand=='verify':
         changes=verify(root,Path(cfg['integrity']['manifest'])); print(json.dumps(changes,indent=2)); return 0 if not [x for x in changes if x[0] in ('ADDED','REMOVED','MODIFIED')] else 3
     g=graph(root,cfg)
