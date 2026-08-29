@@ -15,25 +15,15 @@ def evaluate(toolchains, sections):
     native_available = bool(toolchains.get("cargo", {}).get("available") and toolchains.get("rustc", {}).get("available"))
     for offset, name in enumerate(NATIVE, 6):
         if not rust:
-            status = None
-            reason = "NOT_APPLICABLE: no Rust manifest or source marker detected; no native Rust claim is made."
-            required = False
-            applicability = "NOT_APPLICABLE"
-        elif native_available:
-            status = Status.BLOCKED
-            reason = "Native tools are available, but rustless does not execute native commands automatically. Independent native evidence is required."
-            required = True
-            applicability = "APPLICABLE"
+            gate = Gate(f"RG-{offset:03d}", name, False, Status.VERIFIED, class_name="advisory", reason="Native gate not applicable: no Rust manifest or source marker detected.")
+            data = gate.json()
+            data["applicability"] = "NOT_APPLICABLE"
         else:
-            status = Status.BLOCKED
-            reason = "Native prerequisite unavailable; rustless does not emulate native execution."
-            required = True
-            applicability = "APPLICABLE"
-        gate = Gate(f"RG-{offset:03d}", name, required, status or Status.VERIFIED, class_name="required" if required else "advisory", reason=reason, blocking_reasons=[reason] if status == Status.BLOCKED and required else [])
-        data = gate.json()
-        data["applicability"] = applicability
-        if not rust:
-            data["status"] = "NOT_APPLICABLE"
+            reason = ("Native tools are available, but rustless does not execute native commands automatically; independent native evidence is required."
+                      if native_available else "Native prerequisite unavailable; rustless does not emulate native execution.")
+            gate = Gate(f"RG-{offset:03d}", name, True, Status.BLOCKED, class_name="required", reason=reason, blocking_reasons=[reason])
+            data = gate.json()
+            data["applicability"] = "APPLICABLE"
         gates.append(data)
-    required_status = aggregate(Status(g["status"]) for g in gates if g["required"] and g["status"] != "NOT_APPLICABLE")
+    required_status = aggregate(Status(g["status"]) for g in gates if g["required"])
     return gates, required_status.value
