@@ -2,6 +2,7 @@ from .models import Gate, Status, aggregate
 
 NATIVE = ("cargo_check", "cargo_test", "cargo_fmt", "cargo_clippy", "miri")
 
+
 def evaluate(toolchains, sections):
     rust = bool(toolchains.get("rust_files"))
     gates = [
@@ -14,17 +15,25 @@ def evaluate(toolchains, sections):
     native_available = bool(toolchains.get("cargo", {}).get("available") and toolchains.get("rustc", {}).get("available"))
     for offset, name in enumerate(NATIVE, 6):
         if not rust:
-            status = Status.VERIFIED
-            reason = "Not applicable: repository contains no detected Rust manifest/source marker."
+            status = None
+            reason = "NOT_APPLICABLE: no Rust manifest or source marker detected; no native Rust claim is made."
             required = False
+            applicability = "NOT_APPLICABLE"
         elif native_available:
             status = Status.BLOCKED
             reason = "Native tools are available, but rustless does not execute native commands automatically. Independent native evidence is required."
             required = True
+            applicability = "APPLICABLE"
         else:
             status = Status.BLOCKED
             reason = "Native prerequisite unavailable; rustless does not emulate native execution."
             required = True
-        gates.append(Gate(f"RG-{offset:03d}", name, required, status, class_name="required" if required else "advisory", reason=reason, blocking_reasons=[reason] if status == Status.BLOCKED and required else []))
-    required_status = aggregate(g.status for g in gates if g.required)
-    return [g.json() for g in gates], required_status.value
+            applicability = "APPLICABLE"
+        gate = Gate(f"RG-{offset:03d}", name, required, status or Status.VERIFIED, class_name="required" if required else "advisory", reason=reason, blocking_reasons=[reason] if status == Status.BLOCKED and required else [])
+        data = gate.json()
+        data["applicability"] = applicability
+        if not rust:
+            data["status"] = "NOT_APPLICABLE"
+        gates.append(data)
+    required_status = aggregate(Status(g["status"]) for g in gates if g["required"] and g["status"] != "NOT_APPLICABLE")
+    return gates, required_status.value
