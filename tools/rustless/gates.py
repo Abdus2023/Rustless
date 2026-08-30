@@ -15,7 +15,6 @@ def _section_status(sections, name):
 
 def evaluate(toolchains, sections):
     gates = []
-
     for gid, name, section in (
         ("RG-001", "Repository Inventory", "inventory"),
         ("RG-002", "Fixture Integrity", "fixtures"),
@@ -40,8 +39,8 @@ def evaluate(toolchains, sections):
     for offset, name in enumerate(NATIVE, 6):
         if not rust:
             gate = Gate(
-                f"RG-{offset:03d}", name, False, Status.VERIFIED,
-                reason="Native gate not applicable: no Rust marker detected.",
+                f"RG-{offset:03d}", name, False, Status.PARTIALLY_VERIFIED,
+                reason="Native gate not applicable: no Rust marker detected; no native verification was performed.",
                 class_name="advisory",
             ).json()
             gate["applicability"] = "NOT_APPLICABLE"
