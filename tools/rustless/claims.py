@@ -1,5 +1,4 @@
 from pathlib import Path
-import re
 
 CATS = (
     "cargo test passes",
@@ -12,10 +11,10 @@ CATS = (
 )
 
 
-def _classification(claim: str, native_available: bool) -> str:
+def _classification(claim: str) -> str:
     low = claim.lower()
     if any(x in low for x in ("cargo test", "cargo check", "cargo clippy", "miri")):
-        return "EVIDENCE_BACKED" if native_available else "REPOSITORY_REPORTED"
+        return "REPOSITORY_REPORTED"
     if "benchmark" in low or "runtime safety" in low or "implementation complete" in low:
         return "REPOSITORY_REPORTED"
     return "DECLARATIVE"
@@ -23,10 +22,6 @@ def _classification(claim: str, native_available: bool) -> str:
 
 def reconcile(root, toolchains):
     rows = []
-    native_available = bool(
-        toolchains.get("cargo", {}).get("available")
-        and toolchains.get("rustc", {}).get("available")
-    )
     for p in sorted(root.rglob("*")):
         if not p.is_file() or p.is_symlink() or p.suffix.lower() not in (
             ".md", ".rst", ".txt", ".json", ".toml", ".yaml", ".yml"
@@ -40,13 +35,10 @@ def reconcile(root, toolchains):
             low = line.lower()
             for category in CATS:
                 if category in low:
-                    classification = _classification(line.strip(), native_available)
                     rows.append({
                         "file": p.relative_to(root).as_posix(),
                         "claim": line.strip(),
-                        "classification": classification,
-                        # Claim status describes what the repository has established,
-                        # not whether a required native gate is runnable.
+                        "classification": _classification(line.strip()),
                         "status": "PROVISIONAL",
                         "required_evidence": [category],
                     })
